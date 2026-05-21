@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id           String   @id @default(uuid())
+  title        String
+  description  String   @default("")
+  instructorId String
+  price        Float
+  coverImage   String?
+  modules      Module[]
+}
+
+model Module {
+  id          String   @id @default(uuid())
+  courseId    String
+  title       String
+  description String   @default("")
+  position    Int
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+}
+
+model Lesson {
+  id          String     @id @default(uuid())
+  moduleId    String
+  title       String
+  description String     @default("")
+  videoUrl    String?
+  status      String     @default("Pending")
+  position    Int
+  module      Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  resources   Resource[]
+}
+
+model Resource {
+  id       String @id @default(uuid())
+  lessonId String
+  title    String
+  fileUrl  String
+  fileType String // "pdf", "audio", "zip", etc.
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}

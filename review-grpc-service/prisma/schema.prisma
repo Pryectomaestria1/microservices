@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  courseId  String
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}

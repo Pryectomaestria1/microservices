@@ -1,0 +1,93 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: udemy-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - mongodb_data:/data/db
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: udemy-mongo-ui
+    restart: always
+    ports:
+      - "8082:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password123@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: password123
+    depends_on:
+      - mongodb
+
+  postgres:
+    image: postgres:15
+    container_name: udemy-postgres
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: udemy_admin
+      POSTGRES_PASSWORD: udemy_password
+      POSTGRES_DB: udemy_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: udemy-pgadmin
+    restart: always
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@udemy.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - postgres
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: udemy-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    container_name: udemy-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  minio-create-bucket:
+    image: alpine:latest
+    container_name: udemy-minio-setup
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      apk add --no-cache curl &&
+      curl -s -L -O https://dl.min.io/client/mc/release/linux-amd64/mc &&
+      chmod +x mc &&
+      ./mc alias set myminio http://minio:9000 admin password123 &&
+      ./mc mb myminio/udemy-media --ignore-existing &&
+      ./mc anonymous set public myminio/udemy-media &&
+      echo 'MinIO bucket initialized successfully!'
+      "
+
+volumes:
+  mongodb_data:
+  postgres_data:
+  minio_data:
