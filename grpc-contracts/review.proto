@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package udemy.reviews.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Servicio de Reseñas (PascalCase como recomiendan las diapositivas)
+service ReviewService {
+  // Flujo Unary (1 petición -> 1 respuesta)
+  rpc CreateReview (CreateReviewRequest) returns (ReviewResponse);
+  rpc GetReview (GetReviewRequest) returns (ReviewResponse);
+  rpc UpdateReview (UpdateReviewRequest) returns (ReviewResponse);
+  rpc DeleteReview (DeleteReviewRequest) returns (DeleteReviewResponse);
+  rpc ListCourseReviews (ListCourseReviewsRequest) returns (ListCourseReviewsResponse);
+}
+
+// Mensajes (Modelamos RECURSOS, no acciones)
+message Review {
+  string id = 1;
+  string course_id = 2; // snake_case para campos como pide la convención
+  string user_id = 3;
+  int32 rating = 4;
+  string comment = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message CreateReviewRequest {
+  string course_id = 1;
+  int32 rating = 2;
+  string comment = 3;
+}
+
+message GetReviewRequest {
+  string id = 1;
+}
+
+message ReviewResponse {
+  Review review = 1;
+}
+
+message UpdateReviewRequest {
+  string id = 1;
+  optional int32 rating = 2;
+  optional string comment = 3;
+}
+
+message DeleteReviewRequest {
+  string id = 1;
+}
+
+message DeleteReviewResponse {
+  bool success = 1;
+}
+
+message ListCourseReviewsRequest {
+  string course_id = 1;
+}
+
+message ListCourseReviewsResponse {
+  repeated Review reviews = 1;
+}

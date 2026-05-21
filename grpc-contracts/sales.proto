@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package sales;
+
+service SalesService {
+  rpc ProcessPayment (ProcessPaymentRequest) returns (ProcessPaymentResponse);
+}
+
+message ProcessPaymentRequest {
+  string userId = 1;
+  repeated string courseIds = 2;
+  double amount = 3;
+  string cardNumber = 4;
+  string expiryDate = 5;
+  string cvv = 6;
+  string cardHolder = 7;
+}
+
+message ProcessPaymentResponse {
+  bool success = 1;
+  string transactionId = 2;
+  string message = 3;
+}

@@ -17,7 +17,7 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'user',
-          protoPath: join(process.cwd(), '../..', 'grpc-contracts', 'user.proto'),
+          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'user.proto'),
           url: 'localhost:50051',
         },
       },
@@ -26,7 +26,7 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'catalog',
-          protoPath: join(process.cwd(), '../..', 'grpc-contracts', 'catalog.proto'),
+          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'catalog.proto'),
           url: 'localhost:50052',
         },
       },
@@ -35,7 +35,7 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'media',
-          protoPath: join(process.cwd(), '../..', 'grpc-contracts', 'media.proto'),
+          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'media.proto'),
           url: 'localhost:50053',
         },
       },
@@ -44,7 +44,7 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'enrollment',
-          protoPath: join(process.cwd(), '../..', 'grpc-contracts', 'enrollment.proto'),
+          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'enrollment.proto'),
           url: 'localhost:50054',
         },
       },
@@ -53,7 +53,7 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'sales',
-          protoPath: join(process.cwd(), '../..', 'grpc-contracts', 'sales.proto'),
+          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'sales.proto'),
           url: 'localhost:50055',
         },
       },

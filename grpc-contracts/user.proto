@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package user;
+
+service UserService {
+  rpc ValidateToken (ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc BecomeInstructor (BecomeInstructorRequest) returns (BecomeInstructorResponse);
+  rpc GetUsersByIds (GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
+  rpc SyncProfile (SyncProfileRequest) returns (SyncProfileResponse);
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool isValid = 1;
+  string userId = 2;
+  string role = 3;
+}
+
+message BecomeInstructorRequest {
+  string token = 1;
+}
+
+message BecomeInstructorResponse {
+  bool success = 1;
+  string role = 2;
+}
+
+message GetUsersByIdsRequest {
+  repeated string userIds = 1;
+}
+
+message GetUsersByIdsResponse {
+  repeated UserSummary users = 1;
+}
+
+message UserSummary {
+  string id = 1;
+  string name = 2;
+  string avatarUrl = 3;
+}
+
+message SyncProfileRequest {
+  string userId = 1;
+  string name = 2;
+  string avatarUrl = 3;
+}
+
+message SyncProfileResponse {
+  bool success = 1;
+}

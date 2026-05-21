@@ -1,0 +1,163 @@
+syntax = "proto3";
+
+package catalog;
+
+service CatalogService {
+  rpc CreateCourse (CreateCourseRequest) returns (Course);
+  rpc AddModuleToCourse (AddModuleRequest) returns (Module);
+  rpc AddLessonToModule (AddLessonRequest) returns (Lesson);
+  rpc UpdateLessonVideo (UpdateLessonVideoRequest) returns (Lesson);
+  rpc GetCoursesByIds (GetCoursesByIdsRequest) returns (GetCoursesByIdsResponse);
+  rpc GetCourseInfo (GetCourseInfoRequest) returns (CourseInfoResponse);
+  rpc ListCourses (ListCoursesRequest) returns (ListCoursesResponse);
+  rpc GetCourseDetails (GetCourseDetailsRequest) returns (CourseDetails);
+  rpc UpdateCourse (UpdateCourseRequest) returns (CourseDetails);
+  rpc AddResourceToLesson (AddResourceRequest) returns (Resource);
+  rpc UpdateModule (UpdateModuleRequest) returns (Module);
+  rpc UpdateLesson (UpdateLessonRequest) returns (Lesson);
+  rpc VerifyOwnership (VerifyOwnershipRequest) returns (VerifyOwnershipResponse);
+}
+
+message ListCoursesRequest {}
+
+message ListCoursesResponse {
+  repeated Course courses = 1;
+}
+
+message Course {
+  string id = 1;
+  string title = 2;
+  string instructorId = 3;
+  double price = 4;
+  string description = 5;
+  string coverImage = 6;
+}
+
+message Module {
+  string id = 1;
+  string courseId = 2;
+  string title = 3;
+  string description = 4;
+  int32 position = 5;
+}
+
+message Lesson {
+  string id = 1;
+  string moduleId = 2;
+  string title = 3;
+  string videoUrl = 4;
+  string status = 5;
+  repeated Resource resources = 6;
+  string description = 7;
+  int32 position = 8;
+}
+
+message Resource {
+  string id = 1;
+  string lessonId = 2;
+  string title = 3;
+  string fileUrl = 4;
+  string fileType = 5;
+}
+
+message CreateCourseRequest {
+  string title = 1;
+  string instructorId = 2;
+  double price = 3;
+  string description = 4;
+  string coverImage = 5;
+}
+
+message AddModuleRequest {
+  string courseId = 1;
+  string title = 2;
+  string description = 3;
+  int32 position = 4;
+}
+
+message AddLessonRequest {
+  string moduleId = 1;
+  string title = 2;
+  string description = 3;
+  int32 position = 4;
+}
+
+message UpdateLessonVideoRequest {
+  string lessonId = 1;
+  string videoUrl = 2;
+}
+
+message GetCoursesByIdsRequest {
+  repeated string courseIds = 1;
+}
+
+message GetCoursesByIdsResponse {
+  repeated Course courses = 1;
+}
+
+message GetCourseInfoRequest {
+  string courseId = 1;
+}
+
+message CourseInfoResponse {
+  bool exists = 1;
+  double price = 2;
+}
+
+message GetCourseDetailsRequest {
+  string courseId = 1;
+}
+
+message CourseDetails {
+  string id = 1;
+  string title = 2;
+  string instructorId = 3;
+  double price = 4;
+  string description = 5;
+  repeated ModuleDetails modules = 6;
+  string coverImage = 7;
+}
+
+message ModuleDetails {
+  string id = 1;
+  string title = 2;
+  repeated Lesson lessons = 3;
+  string description = 4;
+}
+
+message AddResourceRequest {
+  string lessonId = 1;
+  string title = 2;
+  string fileUrl = 3;
+  string fileType = 4;
+}
+
+message UpdateCourseRequest {
+  string courseId = 1;
+  string title = 2;
+  string description = 3;
+  string coverImage = 4;
+}
+
+message UpdateModuleRequest {
+  string moduleId = 1;
+  string title = 2;
+  string description = 3;
+}
+
+message UpdateLessonRequest {
+  string lessonId = 1;
+  string title = 2;
+  string description = 3;
+}
+
+message VerifyOwnershipRequest {
+  string userId = 1;
+  string courseId = 2;
+  string moduleId = 3;
+  string lessonId = 4;
+}
+
+message VerifyOwnershipResponse {
+  bool isOwner = 1;
+}

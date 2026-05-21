@@ -11,7 +11,7 @@ async function bootstrap() {
     transport: Transport.GRPC,
     options: {
       package: 'enrollment',
-      protoPath: join(process.cwd(), '../..', 'grpc-contracts', 'enrollment.proto'),
+      protoPath: join(process.cwd(), '..', 'grpc-contracts', 'enrollment.proto'),
       url: '0.0.0.0:50054',
     },
   });

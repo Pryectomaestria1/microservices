@@ -12,7 +12,7 @@ import { MediaService } from './media.service';
         transport: Transport.GRPC,
         options: {
           package: 'catalog',
-          protoPath: join(process.cwd(), '../..', 'grpc-contracts', 'catalog.proto'),
+          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'catalog.proto'),
           url: 'localhost:50052',
         },
       },

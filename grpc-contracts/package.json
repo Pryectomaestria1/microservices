@@ -1,0 +1,12 @@
+{
+  "name": "grpc-contracts",
+  "version": "1.0.0",
+  "description": "gRPC Proto Contracts and TypeScript Generator",
+  "main": "index.ts",
+  "scripts": {
+    "generate": "npx protoc --plugin=protoc-gen-ts_proto=..\\backend-microservices\\review-grpc-service\\node_modules\\.bin\\protoc-gen-ts_proto.cmd --ts_proto_out=generated --ts_proto_opt=nestJs=true -I . *.proto"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

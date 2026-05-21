@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package media;
+
+service MediaService {
+  rpc GeneratePresignedUrl (GeneratePresignedUrlRequest) returns (GeneratePresignedUrlResponse);
+  rpc ConfirmVideoUpload (ConfirmVideoUploadRequest) returns (ConfirmVideoUploadResponse);
+}
+
+message GeneratePresignedUrlRequest {
+  string fileName = 1;
+  string lessonId = 2;
+}
+
+message GeneratePresignedUrlResponse {
+  string uploadUrl = 1;
+  string key = 2;
+}
+
+message ConfirmVideoUploadRequest {
+  string lessonId = 1;
+  string key = 2;
+}
+
+message ConfirmVideoUploadResponse {
+  string status = 1;
+  string hlsUrl = 2;
+}

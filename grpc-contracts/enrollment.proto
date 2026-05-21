@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package enrollment;
+
+service EnrollmentService {
+  rpc EnrollStudent (EnrollStudentRequest) returns (Enrollment);
+  rpc UpdateProgress (UpdateProgressRequest) returns (Enrollment);
+  rpc MarkLessonCompleted (MarkLessonCompletedRequest) returns (Enrollment);
+  rpc GetMyCourses (GetMyCoursesRequest) returns (GetMyCoursesResponse);
+}
+
+message Enrollment {
+  string id = 1;
+  string courseId = 2;
+  string userId = 3;
+  double amountPaid = 4;
+  double progress = 5;
+  repeated string completedLessons = 6;
+}
+
+message EnrollStudentRequest {
+  string courseId = 1;
+  string userId = 2;
+}
+
+message UpdateProgressRequest {
+  string enrollmentId = 1;
+  double videoTimestamp = 2;
+  double totalDuration = 3;
+}
+
+message MarkLessonCompletedRequest {
+  string enrollmentId = 1;
+  string lessonId = 2;
+}
+
+message GetMyCoursesRequest {
+  string userId = 1;
+}
+
+message EnrolledCourse {
+  string enrollmentId = 1;
+  double progress = 2;
+  string courseId = 3;
+  string title = 4;
+  string instructorId = 5;
+  repeated string completedLessons = 6;
+}
+
+message GetMyCoursesResponse {
+  repeated EnrolledCourse enrollments = 1;
+}
