@@ -137,6 +137,48 @@ curl -X POST http://localhost:3000/v1/courses \
   }'
 ```
 
+### Flujo base de alumno
+
+Con el mismo `access_token` y un curso ya creado:
+
+```bash
+export BASE_URL="http://localhost:3000/v1"
+export USER_ID="auth0|TU_USER_ID"
+export COURSE_ID="ID_DEL_CURSO"
+```
+
+#### 1. Simular checkout
+
+```bash
+curl -X POST "$BASE_URL/sales/checkout" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"userId\": \"$USER_ID\",
+    \"courseIds\": [\"$COURSE_ID\"],
+    \"amount\": 19.99,
+    \"cardNumber\": \"4242424242424242\",
+    \"expiryDate\": \"12/30\",
+    \"cvv\": \"123\",
+    \"cardHolder\": \"Alumno Demo\"
+  }"
+```
+
+Respuesta esperada:
+
+```json
+{"success":true,"message":"Pago exitoso e inscripciones confirmadas en lote."}
+```
+
+#### 2. Ver cursos inscritos
+
+```bash
+curl "$BASE_URL/enrollments/my-courses/$USER_ID" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Respuesta esperada: el curso comprado debe aparecer dentro de `enrollments`.
+
 ---
 
 ## 🛠 Desarrollo manual sin Docker
