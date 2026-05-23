@@ -6,6 +6,8 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { OwnershipGuard } from './ownership.guard';
+import { RolesGuard } from './roles.guard';
+import { ResolvedUserGuard } from './resolved-user.guard';
 
 const defaultProtoPath = join(process.cwd(), '..', 'grpc-contracts');
 
@@ -62,6 +64,6 @@ const defaultProtoPath = join(process.cwd(), '..', 'grpc-contracts');
     ]),
   ],
   controllers: [AppController],
-  providers: [JwtStrategy, OwnershipGuard],
+  providers: [JwtStrategy, OwnershipGuard, RolesGuard, ResolvedUserGuard],
 })
 export class AppModule {}

@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
 import { ConfigService } from '@nestjs/config';
+import { extractRole } from './roles';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -28,10 +29,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
+  async validate(payload: Record<string, unknown>) {
     return {
-      userId: payload.sub,
-      role: payload['https://mis-roles.com/roles'] || payload.role || 'STUDENT',
+      userId: typeof payload.sub === 'string' ? payload.sub : '',
+      role: extractRole(payload),
     };
   }
 }

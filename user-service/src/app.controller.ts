@@ -3,6 +3,7 @@ import { GrpcMethod } from '@nestjs/microservices';
 import * as jwt from 'jsonwebtoken';
 import * as fs from 'fs';
 import * as path from 'path';
+import { extractRole, normalizeRole, ROLE } from './roles';
 
 const ROLES_FILE_PATH = path.join(process.cwd(), 'upgraded_roles.json');
 const PROFILES_FILE_PATH = path.join(process.cwd(), 'user_profiles.json');
@@ -21,7 +22,7 @@ function getUpgradedRoles(): Record<string, string> {
 
 function saveUpgradedRole(userId: string, role: string) {
   const roles = getUpgradedRoles();
-  roles[userId] = role;
+  roles[userId] = normalizeRole(role);
   fs.writeFileSync(ROLES_FILE_PATH, JSON.stringify(roles, null, 2), 'utf-8');
 }
 
@@ -48,16 +49,19 @@ export class AppController {
   @GrpcMethod('UserService', 'ValidateToken')
   validateToken(data: { token: string }) {
     try {
-      const decoded: any = jwt.decode(data.token);
-      const userId = decoded?.sub || '';
+      const decodedToken = jwt.decode(data.token);
+      const decoded =
+        decodedToken && typeof decodedToken === 'object'
+          ? (decodedToken as Record<string, unknown>)
+          : {};
+      const userId = typeof decoded.sub === 'string' ? decoded.sub : '';
       
       // Consultar si el rol fue ascendido localmente
       const upgradedRoles = getUpgradedRoles();
-      let role = upgradedRoles[userId];
+      let role = upgradedRoles[userId] ? normalizeRole(upgradedRoles[userId]) : '';
 
       if (!role) {
-        // Fallback al claim personalizado de Auth0 o Student
-        role = decoded?.['https://udemyclone.com/roles']?.[0] || 'Student';
+        role = extractRole(decoded);
       }
 
       return {
@@ -73,22 +77,26 @@ export class AppController {
   @GrpcMethod('UserService', 'BecomeInstructor')
   becomeInstructor(data: { token: string }) {
     try {
-      const decoded: any = jwt.decode(data.token);
-      const userId = decoded?.sub || '';
+      const decodedToken = jwt.decode(data.token);
+      const decoded =
+        decodedToken && typeof decodedToken === 'object'
+          ? (decodedToken as Record<string, unknown>)
+          : {};
+      const userId = typeof decoded.sub === 'string' ? decoded.sub : '';
       
       if (!userId) {
-        return { success: false, role: 'Student' };
+        return { success: false, role: ROLE.STUDENT };
       }
 
       // Guardar ascenso en base de datos local JSON (persistencia para la demo)
-      saveUpgradedRole(userId, 'Instructor');
+      saveUpgradedRole(userId, ROLE.INSTRUCTOR);
 
       return {
         success: true,
-        role: 'Instructor',
+        role: ROLE.INSTRUCTOR,
       };
     } catch (e) {
-      return { success: false, role: 'Student' };
+      return { success: false, role: ROLE.STUDENT };
     }
   }
 

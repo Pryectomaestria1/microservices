@@ -18,6 +18,10 @@ import * as ms from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from './auth.guard';
 import { OwnershipGuard } from './ownership.guard';
+import { Roles } from './roles.decorator';
+import { RolesGuard } from './roles.guard';
+import { ROLE } from './roles';
+import { ResolvedUserGuard } from './resolved-user.guard';
 import * as fs from 'fs';
 import { join } from 'path';
 
@@ -68,7 +72,8 @@ export class AppController implements OnModuleInit {
     }));
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('courses')
   async createCourse(@Body() data: any, @Req() req: any) {
     const userId = req.user?.userId;
@@ -132,7 +137,8 @@ export class AppController implements OnModuleInit {
     }
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Put('courses/:id')
   async updateCourse(@Param('id') id: string, @Body() data: any) {
     const payload: any = { courseId: id, title: data.title, description: data.description };
@@ -142,7 +148,8 @@ export class AppController implements OnModuleInit {
     return await firstValueFrom(this.catalogService.UpdateCourse(payload));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('courses/:id/cover')
   @UseInterceptors(FileInterceptor('file'))
   async uploadCourseCover(
@@ -211,31 +218,36 @@ export class AppController implements OnModuleInit {
   }
 
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('courses/:id/modules')
   async addModule(@Param('id') courseId: string, @Body() data: { title: string; description?: string; position: number }) {
     return await firstValueFrom(this.catalogService.AddModuleToCourse({ courseId, title: data.title, description: data.description || '', position: data.position }));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('modules/:moduleId/lessons')
   async addLesson(@Param('moduleId') moduleId: string, @Body() data: { title: string; description?: string; position: number }) {
     return await firstValueFrom(this.catalogService.AddLessonToModule({ moduleId, title: data.title, description: data.description || '', position: data.position }));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Put('modules/:moduleId')
   async updateModule(@Param('moduleId') moduleId: string, @Body() data: { title: string; description: string }) {
     return await firstValueFrom(this.catalogService.UpdateModule({ moduleId, title: data.title, description: data.description }));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Put('lessons/:lessonId')
   async updateLesson(@Param('lessonId') lessonId: string, @Body() data: { title: string; description: string }) {
     return await firstValueFrom(this.catalogService.UpdateLesson({ lessonId, title: data.title, description: data.description }));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('lessons/:lessonId/video')
   @UseInterceptors(FileInterceptor('file'))
   async uploadVideo(
@@ -264,7 +276,8 @@ export class AppController implements OnModuleInit {
     return { success: true, videoUrl };
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('lessons/:lessonId/resources')
   @UseInterceptors(FileInterceptor('file'))
   async uploadResource(
@@ -298,7 +311,8 @@ export class AppController implements OnModuleInit {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('media/upload-url')
   async getUploadUrl(@Body() data: any) {
     return await firstValueFrom(this.mediaService.GeneratePresignedUrl(data));
