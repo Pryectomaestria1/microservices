@@ -1,38 +1,149 @@
 # Udemy Clone - Backend Microservicios 🚀
 
-Este repositorio contiene la arquitectura de microservicios para el clon de Udemy, construida con NestJS, gRPC, RabbitMQ y PostgreSQL. También incluye los contratos de gRPC (`grpc-contracts`).
+Backend de un clon de Udemy construido con **NestJS**, **gRPC**, **RabbitMQ**, **PostgreSQL**, **Prisma** y **MinIO**. El repositorio ya soporta un flujo principal de ejecución local con **Docker Compose** para levantar la infraestructura y los microservicios activos con un solo comando.
 
-## 🏗 Estructura del Proyecto
+## Quick start
 
-El repositorio está organizado como un monorepo:
-- **`api-gateway/`** (Puerto REST 3000): Puerta de enlace que actúa como puente REST → gRPC, maneja autenticación JWT (Auth0) y subida de archivos (portadas y videos de lecciones).
-- **`grpc-contracts/`**: Definición de contratos protobuf (`.proto`) y código TypeScript autogenerado.
-- **`user-service/`** (gRPC 50051): Servicio de autenticación y perfiles de usuario.
-- **`catalog-service/`** (gRPC 50052): Gestión de cursos, módulos, lecciones y recursos (PostgreSQL con Prisma).
-- **`media-service/`** (gRPC 50053): Subida de videos y assets a MinIO (compatible con AWS S3).
-- **`enrollment-service/`** (gRPC 50054 + RabbitMQ): Inscripción de estudiantes y progreso de lecciones (PostgreSQL con Prisma).
-- **`sales-service/`** (gRPC 50055): Transacciones de compras simuladas y emisor de eventos a RabbitMQ (PostgreSQL con Prisma).
+### 1. Crear `.env`
 
-## 🐳 Infraestructura (Docker)
+```bash
+cp .env.example .env
+```
 
-El archivo `docker-compose.yml` en la raíz define e inicia la infraestructura base:
-- **PostgreSQL** (Puerto 5433 externo): Base de datos relacional para catálogo, ventas e inscripciones.
-- **MongoDB** (Puerto 27017): Base de datos para el servicio de reseñas.
-- **RabbitMQ** (Puertos 5672, 15672): Message broker para sincronización de inscripciones asíncronas.
-- **MinIO** (Puertos 9000, 9001): Almacenamiento S3 local compatible para videos.
+Completa al menos estas variables de Auth0:
+
+```env
+AUTH0_ISSUER_URL=https://tu-tenant.us.auth0.com/
+AUTH0_AUDIENCE=https://api.udemyclone.local
+```
+
+### 2. Levantar el stack completo
+
+```bash
+docker compose up --build
+```
+
+### 3. Verificar que arrancó
+
+```bash
+curl http://localhost:3000/v1/health
+curl http://localhost:3000/v1/courses
+```
+
+Resultados esperados:
+- `/v1/health` → `{"status":"ok"}`
+- `/v1/courses` → `[]` o lista de cursos
 
 ---
 
-## 🚀 Guía de Instalación y Ejecución
+## 🏗 Estructura del proyecto
 
-### 1. Iniciar la Infraestructura Base
-Asegúrate de tener Docker corriendo y ejecuta:
+El repositorio está organizado como un monorepo:
+
+| Carpeta | Puerto | Responsabilidad |
+|---|---:|---|
+| `api-gateway/` | 3000 | Puerta REST → gRPC, validación JWT con Auth0, uploads locales |
+| `grpc-contracts/` | — | Contratos protobuf (`.proto`) |
+| `user-service/` | 50051 | Validación de token, perfiles y elevación a instructor |
+| `catalog-service/` | 50052 | Cursos, módulos, lecciones y recursos (Prisma + PostgreSQL) |
+| `media-service/` | 50053 | Presigned URLs y flujo de medios (MinIO/S3 compatible) |
+| `enrollment-service/` | 50054 | Inscripciones y progreso (Prisma + PostgreSQL + RabbitMQ) |
+| `sales-service/` | 50055 | Checkout simulado y eventos de compra (Prisma + RabbitMQ) |
+
+---
+
+## 🐳 Stack Docker actual
+
+`docker-compose.yml` levanta tanto infraestructura como servicios activos.
+
+### Infraestructura
+- **PostgreSQL** (`5433` externo)
+- **RabbitMQ** (`5672`, `15672`)
+- **MinIO** (`9000`, `9001`)
+- **MongoDB** (`27017`) — hoy no es parte crítica del flujo principal validado
+- **pgAdmin** (`5050`)
+- **mongo-express** (`8082`)
+
+### Servicios de aplicación
+- `db-init` — bootstrap de Prisma
+- `user-service`
+- `catalog-service`
+- `media-service`
+- `enrollment-service`
+- `sales-service`
+- `api-gateway`
+
+### Estrategia de base de datos
+
+Los servicios Prisma comparten la misma base `udemy_db`, pero usan **schemas separados** para no pisarse entre sí:
+
+- `catalog`
+- `enrollment`
+- `sales`
+
+Esto se configura vía `DATABASE_URL` con `?schema=...`.
+
+---
+
+## 🔐 Variables importantes
+
+Las variables base están documentadas en `.env.example`.
+
+Las más importantes para el arranque local son:
+
+| Variable | Uso |
+|---|---|
+| `AUTH0_ISSUER_URL` | Issuer base del tenant Auth0 |
+| `AUTH0_AUDIENCE` | Audience/Identifier de la API en Auth0 |
+| `CATALOG_DATABASE_URL` | URL Prisma para schema `catalog` |
+| `ENROLLMENT_DATABASE_URL` | URL Prisma para schema `enrollment` |
+| `SALES_DATABASE_URL` | URL Prisma para schema `sales` |
+| `PUBLIC_URL` | URL pública usada para construir links de uploads |
+
+---
+
+## ✅ Smoke tests manuales
+
+### Públicos
+
 ```bash
-docker-compose up -d
+curl http://localhost:3000/v1/health
+curl http://localhost:3000/v1/courses
 ```
 
-### 2. Configurar Base de Datos y Generar Cliente de Prisma
-Para cada microservicio con persistencia en PostgreSQL, debes instalar las dependencias e inicializar Prisma:
+### Autenticados
+
+Con un `access_token` válido de Auth0:
+
+```bash
+curl -X POST http://localhost:3000/v1/users/become-instructor \
+  -H "Authorization: Bearer $TOKEN"
+
+curl -X POST http://localhost:3000/v1/users/profile \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Luis Demo",
+    "avatarUrl": "https://example.com/avatar.png"
+  }'
+
+curl -X POST http://localhost:3000/v1/courses \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Curso Docker Test",
+    "description": "Probando stack dockerizado",
+    "price": 19.99
+  }'
+```
+
+---
+
+## 🛠 Desarrollo manual sin Docker
+
+Sigue siendo posible levantar servicios manualmente con `npm run start:dev`, pero ahora es el camino secundario.
+
+### Bootstrap manual mínimo
 
 ```bash
 # Catalog Service
@@ -51,33 +162,14 @@ npm install
 npx prisma db push
 ```
 
-### 3. Ejecutar los Microservicios
-En terminales separadas, inicia cada servicio:
+Después puedes levantar cada servicio por separado si necesitás debugging fino.
 
-```bash
-# API Gateway
-cd api-gateway
-npm install
-npm run start:dev
+---
 
-# User Service
-cd ../user-service && npm install && npm run start:dev
+## 📦 Regenerar contratos gRPC (opcional)
 
-# Catalog Service
-cd ../catalog-service && npm run start:dev
+Si modificas archivos `.proto` dentro de `grpc-contracts/`:
 
-# Media Service
-cd ../media-service && npm install && npm run start:dev
-
-# Enrollment Service
-cd ../enrollment-service && npm run start:dev
-
-# Sales Service
-cd ../sales-service && npm run start:dev
-```
-
-### 4. Generar Tipos de gRPC (Opcional)
-Si modificas algún archivo `.proto` dentro de `grpc-contracts/`, puedes regenerar los archivos TypeScript asociados ejecutando:
 ```bash
 cd grpc-contracts
 npm install
@@ -86,11 +178,11 @@ npm run generate
 
 ---
 
-## 🗄️ Notas sobre el Almacenamiento (MinIO a AWS S3)
+## 🗄️ Notas sobre almacenamiento
 
-Actualmente, el sistema guarda las portadas de los cursos y los videos de las lecciones en la carpeta local `uploads/` del `api-gateway`. Sin embargo, el microservicio `media-service` está completamente estructurado para usar almacenamiento compatible con S3.
+Actualmente, las portadas de cursos y los videos de lecciones se guardan en `api-gateway/uploads/`. Al mismo tiempo, `media-service` ya está preparado para trabajar con almacenamiento compatible con S3 mediante MinIO.
 
-**Para migrar a AWS S3 real (Dificultad: 3/10):**
-1. Cambia las credenciales en el archivo `.env` de `media-service` (AWS access keys, bucket, region).
-2. Remueve la propiedad `endpoint` de la configuración de `S3Client` en `media-service/src/media.service.ts` para que se conecte directamente al cloud de AWS en lugar de localhost:9000.
-3. Modifica los controladores en `api-gateway` para subir el stream a través del `media-service` usando sus métodos gRPC en lugar de escribir en el sistema de archivos local (`fs`).
+### Para migrar a AWS S3 real
+1. Cambiar credenciales/config del cliente S3.
+2. Remover el `endpoint` local si apuntás a AWS real.
+3. Mover el flujo de upload del `api-gateway` hacia `media-service` para evitar persistencia local en disco.
