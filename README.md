@@ -123,7 +123,7 @@ curl -X POST http://localhost:3000/v1/users/profile \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Luis Demo",
+    "name": "Test User",
     "avatarUrl": "https://example.com/avatar.png"
   }'
 
@@ -160,7 +160,7 @@ curl -X POST "$BASE_URL/sales/checkout" \
     \"cardNumber\": \"4242424242424242\",
     \"expiryDate\": \"12/30\",
     \"cvv\": \"123\",
-    \"cardHolder\": \"Alumno Demo\"
+    \"cardHolder\": \"Test User\"
   }"
 ```
 
