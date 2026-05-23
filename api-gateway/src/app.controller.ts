@@ -45,6 +45,11 @@ export class AppController implements OnModuleInit {
     this.salesService = this.clientSales.getService('SalesService');
   }
 
+  @Get('health')
+  health() {
+    return { status: 'ok' };
+  }
+
   @UseGuards(AuthGuard)
   @Post('users/become-instructor')
   async becomeInstructor(@Req() req: any) {
@@ -159,7 +164,7 @@ export class AppController implements OnModuleInit {
     const filePath = join(uploadsDir, fileName);
     fs.writeFileSync(filePath, file.buffer);
 
-    const coverImage = `http://localhost:3000/uploads/${fileName}`;
+    const coverImage = `${process.env.PUBLIC_URL || 'http://localhost:3000'}/uploads/${fileName}`;
 
     await firstValueFrom(this.catalogService.UpdateCourse({ courseId: id, coverImage }));
 
@@ -252,7 +257,7 @@ export class AppController implements OnModuleInit {
     const filePath = join(uploadsDir, fileName);
     fs.writeFileSync(filePath, file.buffer);
 
-    const videoUrl = `http://localhost:3000/uploads/${fileName}`;
+    const videoUrl = `${process.env.PUBLIC_URL || 'http://localhost:3000'}/uploads/${fileName}`;
 
     await firstValueFrom(this.catalogService.UpdateLessonVideo({ lessonId, videoUrl }));
 
@@ -281,7 +286,7 @@ export class AppController implements OnModuleInit {
     const filePath = join(uploadsDir, fileName);
     fs.writeFileSync(filePath, file.buffer);
 
-    const fileUrl = `http://localhost:3000/uploads/${fileName}`;
+    const fileUrl = `${process.env.PUBLIC_URL || 'http://localhost:3000'}/uploads/${fileName}`;
 
     return await firstValueFrom(
       this.catalogService.AddResourceToLesson({

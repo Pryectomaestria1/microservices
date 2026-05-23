@@ -4,6 +4,8 @@ import { join } from 'path';
 import { AppController } from './app.controller';
 import { EnrollmentService } from './enrollment.service';
 
+const defaultProtoPath = join(process.cwd(), '..', 'grpc-contracts');
+
 @Module({
   imports: [
     ClientsModule.register([
@@ -12,8 +14,8 @@ import { EnrollmentService } from './enrollment.service';
         transport: Transport.GRPC,
         options: {
           package: 'catalog',
-          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'catalog.proto'),
-          url: 'localhost:50052',
+          protoPath: join(process.env.PROTO_PATH || defaultProtoPath, 'catalog.proto'),
+          url: process.env.CATALOG_SERVICE_URL || 'localhost:50052',
         },
       },
     ]),

@@ -7,6 +7,8 @@ import { AppController } from './app.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { OwnershipGuard } from './ownership.guard';
 
+const defaultProtoPath = join(process.cwd(), '..', 'grpc-contracts');
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -17,8 +19,8 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'user',
-          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'user.proto'),
-          url: 'localhost:50051',
+          protoPath: join(process.env.PROTO_PATH || defaultProtoPath, 'user.proto'),
+          url: process.env.USER_SERVICE_URL || 'localhost:50051',
         },
       },
       {
@@ -26,8 +28,8 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'catalog',
-          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'catalog.proto'),
-          url: 'localhost:50052',
+          protoPath: join(process.env.PROTO_PATH || defaultProtoPath, 'catalog.proto'),
+          url: process.env.CATALOG_SERVICE_URL || 'localhost:50052',
         },
       },
       {
@@ -35,8 +37,8 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'media',
-          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'media.proto'),
-          url: 'localhost:50053',
+          protoPath: join(process.env.PROTO_PATH || defaultProtoPath, 'media.proto'),
+          url: process.env.MEDIA_SERVICE_URL || 'localhost:50053',
         },
       },
       {
@@ -44,8 +46,8 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'enrollment',
-          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'enrollment.proto'),
-          url: 'localhost:50054',
+          protoPath: join(process.env.PROTO_PATH || defaultProtoPath, 'enrollment.proto'),
+          url: process.env.ENROLLMENT_SERVICE_URL || 'localhost:50054',
         },
       },
       {
@@ -53,8 +55,8 @@ import { OwnershipGuard } from './ownership.guard';
         transport: Transport.GRPC,
         options: {
           package: 'sales',
-          protoPath: join(process.cwd(), '..', 'grpc-contracts', 'sales.proto'),
-          url: 'localhost:50055',
+          protoPath: join(process.env.PROTO_PATH || defaultProtoPath, 'sales.proto'),
+          url: process.env.SALES_SERVICE_URL || 'localhost:50055',
         },
       },
     ]),

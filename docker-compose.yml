@@ -37,6 +37,11 @@ services:
       POSTGRES_DB: udemy_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U udemy_admin -d udemy_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   pgadmin:
     image: dpage/pgadmin4
@@ -57,6 +62,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   minio:
     image: cgr.dev/chainguard/minio:latest
@@ -87,7 +97,153 @@ services:
       echo 'MinIO bucket initialized successfully!'
       "
 
+  db-init:
+    build:
+      context: .
+      dockerfile: ./catalog-service/Dockerfile
+    working_dir: /app/catalog-service
+    environment:
+      CATALOG_DATABASE_URL: postgresql://udemy_admin:udemy_password@postgres:5432/udemy_db?schema=catalog
+      ENROLLMENT_DATABASE_URL: postgresql://udemy_admin:udemy_password@postgres:5432/udemy_db?schema=enrollment
+      SALES_DATABASE_URL: postgresql://udemy_admin:udemy_password@postgres:5432/udemy_db?schema=sales
+    volumes:
+      - ./enrollment-service/prisma:/workspace/enrollment/prisma:ro
+      - ./sales-service/prisma:/workspace/sales/prisma:ro
+    command: >
+      sh -c "
+      DATABASE_URL=$${CATALOG_DATABASE_URL} npx prisma db push --schema /app/catalog-service/prisma/schema.prisma --skip-generate &&
+      DATABASE_URL=$${ENROLLMENT_DATABASE_URL} npx prisma db push --schema /workspace/enrollment/prisma/schema.prisma --skip-generate &&
+      DATABASE_URL=$${SALES_DATABASE_URL} npx prisma db push --schema /workspace/sales/prisma/schema.prisma --skip-generate
+      "
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  user-service:
+    build:
+      context: .
+      dockerfile: ./user-service/Dockerfile
+    environment:
+      PROTO_PATH: /app/protos
+    healthcheck:
+      test: ["CMD", "node", "-e", "const n=require('net');const s=n.createConnection(50051,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),3000);"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  catalog-service:
+    build:
+      context: .
+      dockerfile: ./catalog-service/Dockerfile
+    environment:
+      PROTO_PATH: /app/protos
+      DATABASE_URL: postgresql://udemy_admin:udemy_password@postgres:5432/udemy_db?schema=catalog
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "const n=require('net');const s=n.createConnection(50052,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),3000);"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  media-service:
+    build:
+      context: .
+      dockerfile: ./media-service/Dockerfile
+    environment:
+      PROTO_PATH: /app/protos
+      CATALOG_SERVICE_URL: catalog-service:50052
+      AWS_S3_ENDPOINT: http://minio:9000
+    depends_on:
+      catalog-service:
+        condition: service_healthy
+      minio-create-bucket:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "const n=require('net');const s=n.createConnection(50053,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),3000);"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  enrollment-service:
+    build:
+      context: .
+      dockerfile: ./enrollment-service/Dockerfile
+    environment:
+      PROTO_PATH: /app/protos
+      CATALOG_SERVICE_URL: catalog-service:50052
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      DATABASE_URL: postgresql://udemy_admin:udemy_password@postgres:5432/udemy_db?schema=enrollment
+    depends_on:
+      catalog-service:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "const n=require('net');const s=n.createConnection(50054,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),3000);"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  sales-service:
+    build:
+      context: .
+      dockerfile: ./sales-service/Dockerfile
+    environment:
+      PROTO_PATH: /app/protos
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      DATABASE_URL: postgresql://udemy_admin:udemy_password@postgres:5432/udemy_db?schema=sales
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "const n=require('net');const s=n.createConnection(50055,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),3000);"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./api-gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      PROTO_PATH: /app/protos
+      USER_SERVICE_URL: user-service:50051
+      CATALOG_SERVICE_URL: catalog-service:50052
+      MEDIA_SERVICE_URL: media-service:50053
+      ENROLLMENT_SERVICE_URL: enrollment-service:50054
+      SALES_SERVICE_URL: sales-service:50055
+      PUBLIC_URL: http://localhost:3000
+      AUTH0_ISSUER_URL: ${AUTH0_ISSUER_URL}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+    volumes:
+      - gateway_uploads:/app/api-gateway/uploads
+    depends_on:
+      user-service:
+        condition: service_healthy
+      catalog-service:
+        condition: service_healthy
+      media-service:
+        condition: service_healthy
+      enrollment-service:
+        condition: service_healthy
+      sales-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/v1/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
 volumes:
   mongodb_data:
   postgres_data:
   minio_data:
+  gateway_uploads:
