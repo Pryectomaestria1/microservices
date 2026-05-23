@@ -182,21 +182,54 @@ export class AppController implements OnModuleInit {
   @Post('sales/checkout')
   async checkout(
     @Body() data: { 
-      userId: string; 
       courseIds: string[]; 
-      amount: number; 
       cardNumber: string; 
       expiryDate: string; 
       cvv: string; 
       cardHolder: string;
-    }
+    },
+    @Req() req: any
   ) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new BadRequestException('Authenticated user is required for checkout.');
+    }
+
+    if (!Array.isArray(data.courseIds) || data.courseIds.length === 0) {
+      throw new BadRequestException('At least one valid courseId is required.');
+    }
+
+    const normalizedCourseIds = data.courseIds
+      .map((courseId) => courseId?.trim())
+      .filter((courseId) => Boolean(courseId));
+
+    if (normalizedCourseIds.length === 0) {
+      throw new BadRequestException('At least one valid courseId is required.');
+    }
+
+    const uniqueCourseIds = Array.from(new Set(normalizedCourseIds));
+    const catalogResponse: { courses?: Array<{ id: string; price: number }> } = await firstValueFrom(
+      this.catalogService.GetCoursesByIds({ courseIds: uniqueCourseIds })
+    );
+    const courses = catalogResponse?.courses ?? [];
+
+    const courseById = new Map(courses.map((course) => [course.id, course]));
+    const missingCourseIds = uniqueCourseIds.filter((courseId) => !courseById.has(courseId));
+    if (missingCourseIds.length > 0) {
+      throw new BadRequestException(`Invalid courseIds: ${missingCourseIds.join(', ')}`);
+    }
+
+    const amount = uniqueCourseIds.reduce((total, courseId) => {
+      const course = courseById.get(courseId);
+      return total + (course?.price ?? 0);
+    }, 0);
+
     // 1. Procesar el pago simulado de todos los cursos en el carrito
     const paymentResult: any = await firstValueFrom(
       this.salesService.ProcessPayment({
-        userId: data.userId,
-        courseIds: data.courseIds,
-        amount: data.amount,
+        userId,
+        courseIds: uniqueCourseIds,
+        amount,
         cardNumber: data.cardNumber,
         expiryDate: data.expiryDate,
         cvv: data.cvv,
@@ -209,8 +242,8 @@ export class AppController implements OnModuleInit {
     }
 
     // 2. Si el pago es exitoso, inscribir al estudiante en cada uno de los cursos
-    const enrollments = data.courseIds.map(courseId => 
-      firstValueFrom(this.enrollmentService.EnrollStudent({ userId: data.userId, courseId }))
+    const enrollments = uniqueCourseIds.map(courseId => 
+      firstValueFrom(this.enrollmentService.EnrollStudent({ userId, courseId }))
     );
     await Promise.all(enrollments);
 
