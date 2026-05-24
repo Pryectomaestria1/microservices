@@ -18,6 +18,10 @@ import * as ms from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from './auth.guard';
 import { OwnershipGuard } from './ownership.guard';
+import { Roles } from './roles.decorator';
+import { RolesGuard } from './roles.guard';
+import { ROLE } from './roles';
+import { ResolvedUserGuard } from './resolved-user.guard';
 import * as fs from 'fs';
 import { join } from 'path';
 
@@ -45,6 +49,11 @@ export class AppController implements OnModuleInit {
     this.salesService = this.clientSales.getService('SalesService');
   }
 
+  @Get('health')
+  health() {
+    return { status: 'ok' };
+  }
+
   @UseGuards(AuthGuard)
   @Post('users/become-instructor')
   async becomeInstructor(@Req() req: any) {
@@ -59,11 +68,13 @@ export class AppController implements OnModuleInit {
     return await firstValueFrom(this.authService.SyncProfile({ 
       userId, 
       name: data.name, 
-      avatarUrl: data.avatarUrl || '' 
+      avatarUrl: data.avatarUrl || '',
+      role: typeof req.user?.role === 'string' ? req.user.role : '',
     }));
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('courses')
   async createCourse(@Body() data: any, @Req() req: any) {
     const userId = req.user?.userId;
@@ -127,7 +138,8 @@ export class AppController implements OnModuleInit {
     }
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Put('courses/:id')
   async updateCourse(@Param('id') id: string, @Body() data: any) {
     const payload: any = { courseId: id, title: data.title, description: data.description };
@@ -137,7 +149,8 @@ export class AppController implements OnModuleInit {
     return await firstValueFrom(this.catalogService.UpdateCourse(payload));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('courses/:id/cover')
   @UseInterceptors(FileInterceptor('file'))
   async uploadCourseCover(
@@ -159,7 +172,7 @@ export class AppController implements OnModuleInit {
     const filePath = join(uploadsDir, fileName);
     fs.writeFileSync(filePath, file.buffer);
 
-    const coverImage = `http://localhost:3000/uploads/${fileName}`;
+    const coverImage = `${process.env.PUBLIC_URL || 'http://localhost:3000'}/uploads/${fileName}`;
 
     await firstValueFrom(this.catalogService.UpdateCourse({ courseId: id, coverImage }));
 
@@ -170,21 +183,54 @@ export class AppController implements OnModuleInit {
   @Post('sales/checkout')
   async checkout(
     @Body() data: { 
-      userId: string; 
       courseIds: string[]; 
-      amount: number; 
       cardNumber: string; 
       expiryDate: string; 
       cvv: string; 
       cardHolder: string;
-    }
+    },
+    @Req() req: any
   ) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new BadRequestException('Authenticated user is required for checkout.');
+    }
+
+    if (!Array.isArray(data.courseIds) || data.courseIds.length === 0) {
+      throw new BadRequestException('At least one valid courseId is required.');
+    }
+
+    const normalizedCourseIds = data.courseIds
+      .map((courseId) => courseId?.trim())
+      .filter((courseId) => Boolean(courseId));
+
+    if (normalizedCourseIds.length === 0) {
+      throw new BadRequestException('At least one valid courseId is required.');
+    }
+
+    const uniqueCourseIds = Array.from(new Set(normalizedCourseIds));
+    const catalogResponse: { courses?: Array<{ id: string; price: number }> } = await firstValueFrom(
+      this.catalogService.GetCoursesByIds({ courseIds: uniqueCourseIds })
+    );
+    const courses = catalogResponse?.courses ?? [];
+
+    const courseById = new Map(courses.map((course) => [course.id, course]));
+    const missingCourseIds = uniqueCourseIds.filter((courseId) => !courseById.has(courseId));
+    if (missingCourseIds.length > 0) {
+      throw new BadRequestException(`Invalid courseIds: ${missingCourseIds.join(', ')}`);
+    }
+
+    const amount = uniqueCourseIds.reduce((total, courseId) => {
+      const course = courseById.get(courseId);
+      return total + (course?.price ?? 0);
+    }, 0);
+
     // 1. Procesar el pago simulado de todos los cursos en el carrito
     const paymentResult: any = await firstValueFrom(
       this.salesService.ProcessPayment({
-        userId: data.userId,
-        courseIds: data.courseIds,
-        amount: data.amount,
+        userId,
+        courseIds: uniqueCourseIds,
+        amount,
         cardNumber: data.cardNumber,
         expiryDate: data.expiryDate,
         cvv: data.cvv,
@@ -197,8 +243,8 @@ export class AppController implements OnModuleInit {
     }
 
     // 2. Si el pago es exitoso, inscribir al estudiante en cada uno de los cursos
-    const enrollments = data.courseIds.map(courseId => 
-      firstValueFrom(this.enrollmentService.EnrollStudent({ userId: data.userId, courseId }))
+    const enrollments = uniqueCourseIds.map(courseId => 
+      firstValueFrom(this.enrollmentService.EnrollStudent({ userId, courseId }))
     );
     await Promise.all(enrollments);
 
@@ -206,31 +252,36 @@ export class AppController implements OnModuleInit {
   }
 
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('courses/:id/modules')
   async addModule(@Param('id') courseId: string, @Body() data: { title: string; description?: string; position: number }) {
     return await firstValueFrom(this.catalogService.AddModuleToCourse({ courseId, title: data.title, description: data.description || '', position: data.position }));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('modules/:moduleId/lessons')
   async addLesson(@Param('moduleId') moduleId: string, @Body() data: { title: string; description?: string; position: number }) {
     return await firstValueFrom(this.catalogService.AddLessonToModule({ moduleId, title: data.title, description: data.description || '', position: data.position }));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Put('modules/:moduleId')
   async updateModule(@Param('moduleId') moduleId: string, @Body() data: { title: string; description: string }) {
     return await firstValueFrom(this.catalogService.UpdateModule({ moduleId, title: data.title, description: data.description }));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Put('lessons/:lessonId')
   async updateLesson(@Param('lessonId') lessonId: string, @Body() data: { title: string; description: string }) {
     return await firstValueFrom(this.catalogService.UpdateLesson({ lessonId, title: data.title, description: data.description }));
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('lessons/:lessonId/video')
   @UseInterceptors(FileInterceptor('file'))
   async uploadVideo(
@@ -252,14 +303,15 @@ export class AppController implements OnModuleInit {
     const filePath = join(uploadsDir, fileName);
     fs.writeFileSync(filePath, file.buffer);
 
-    const videoUrl = `http://localhost:3000/uploads/${fileName}`;
+    const videoUrl = `${process.env.PUBLIC_URL || 'http://localhost:3000'}/uploads/${fileName}`;
 
     await firstValueFrom(this.catalogService.UpdateLessonVideo({ lessonId, videoUrl }));
 
     return { success: true, videoUrl };
   }
 
-  @UseGuards(AuthGuard, OwnershipGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard, OwnershipGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('lessons/:lessonId/resources')
   @UseInterceptors(FileInterceptor('file'))
   async uploadResource(
@@ -281,7 +333,7 @@ export class AppController implements OnModuleInit {
     const filePath = join(uploadsDir, fileName);
     fs.writeFileSync(filePath, file.buffer);
 
-    const fileUrl = `http://localhost:3000/uploads/${fileName}`;
+    const fileUrl = `${process.env.PUBLIC_URL || 'http://localhost:3000'}/uploads/${fileName}`;
 
     return await firstValueFrom(
       this.catalogService.AddResourceToLesson({
@@ -293,7 +345,8 @@ export class AppController implements OnModuleInit {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, ResolvedUserGuard, RolesGuard)
+  @Roles(ROLE.INSTRUCTOR)
   @Post('media/upload-url')
   async getUploadUrl(@Body() data: any) {
     return await firstValueFrom(this.mediaService.GeneratePresignedUrl(data));

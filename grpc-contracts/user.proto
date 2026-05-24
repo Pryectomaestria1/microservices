@@ -46,8 +46,10 @@ message SyncProfileRequest {
   string userId = 1;
   string name = 2;
   string avatarUrl = 3;
+  string role = 4;
 }
 
 message SyncProfileResponse {
   bool success = 1;
+  string role = 2;
 }

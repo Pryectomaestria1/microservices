@@ -47,10 +47,12 @@ export interface SyncProfileRequest {
   userId: string;
   name: string;
   avatarUrl: string;
+  role: string;
 }
 
 export interface SyncProfileResponse {
   success: boolean;
+  role: string;
 }
 
 export const USER_PACKAGE_NAME = "user";

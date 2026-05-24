@@ -3,6 +3,8 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { join } from 'path';
 import { AppModule } from './app.module';
 
+const defaultProtoPath = join(process.cwd(), '..', 'grpc-contracts');
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -11,7 +13,7 @@ async function bootstrap() {
     transport: Transport.GRPC,
     options: {
       package: 'enrollment',
-      protoPath: join(process.cwd(), '..', 'grpc-contracts', 'enrollment.proto'),
+      protoPath: join(process.env.PROTO_PATH || defaultProtoPath, 'enrollment.proto'),
       url: '0.0.0.0:50054',
     },
   });
@@ -20,7 +22,7 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {
-      urls: ['amqp://localhost:5672'],
+      urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
       queue: 'sales_queue',
       queueOptions: {
         durable: true,
