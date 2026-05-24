@@ -17,10 +17,18 @@ AUTH0_ISSUER_URL=https://tu-tenant.us.auth0.com/
 AUTH0_AUDIENCE=https://api.udemyclone.local
 ```
 
-### 2. Levantar el stack completo
+### 2. Levantar stack por defecto (flujo validado)
 
 ```bash
 docker compose up --build
+```
+
+### 2.1 Levantar stack con tooling opcional
+
+Incluye `mongodb`, `mongo-express` y `pgadmin` además del flujo validado:
+
+```bash
+docker compose --profile tooling up --build
 ```
 
 ### 3. Verificar que arrancó
@@ -54,13 +62,15 @@ El repositorio está organizado como un monorepo:
 
 ## 🐳 Stack Docker actual
 
-`docker-compose.yml` levanta tanto infraestructura como servicios activos.
+`docker-compose.yml` separa el flujo validado por defecto y el tooling opcional por perfil.
 
 ### Infraestructura
 - **PostgreSQL** (`5433` externo)
 - **RabbitMQ** (`5672`, `15672`)
 - **MinIO** (`9000`, `9001`)
-- **MongoDB** (`27017`) — hoy no es parte crítica del flujo principal validado
+
+### Tooling opcional (`--profile tooling`)
+- **MongoDB** (`27017`) — no es parte crítica del flujo principal validado
 - **pgAdmin** (`5050`)
 - **mongo-express** (`8082`)
 
