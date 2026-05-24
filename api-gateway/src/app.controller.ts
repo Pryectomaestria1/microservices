@@ -68,7 +68,8 @@ export class AppController implements OnModuleInit {
     return await firstValueFrom(this.authService.SyncProfile({ 
       userId, 
       name: data.name, 
-      avatarUrl: data.avatarUrl || '' 
+      avatarUrl: data.avatarUrl || '',
+      role: typeof req.user?.role === 'string' ? req.user.role : '',
     }));
   }
 

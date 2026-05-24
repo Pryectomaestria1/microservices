@@ -130,15 +130,21 @@ export class AppController {
   }
 
   @GrpcMethod('UserService', 'SyncProfile')
-  syncProfile(data: { userId: string; name: string; avatarUrl: string }) {
+  syncProfile(data: { userId: string; name: string; avatarUrl: string; role?: string }) {
     try {
       if (data.userId && data.name) {
         saveUserProfile(data.userId, data.name, data.avatarUrl || '');
-        return { success: true };
+        const upgradedRoles = getUpgradedRoles();
+        const role = upgradedRoles[data.userId]
+          ? normalizeRole(upgradedRoles[data.userId])
+          : data.role
+            ? normalizeRole(data.role)
+            : ROLE.STUDENT;
+        return { success: true, role };
       }
-      return { success: false };
+      return { success: false, role: ROLE.STUDENT };
     } catch (e) {
-      return { success: false };
+      return { success: false, role: ROLE.STUDENT };
     }
   }
 }
