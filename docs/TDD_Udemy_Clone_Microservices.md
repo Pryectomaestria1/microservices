@@ -61,12 +61,9 @@ Este documento describe el contenido del backend en microservicios para el proye
 
 | Servicio                      | Transporte                               | Estado y uso esperado                                                                       |
 | ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `_legacy/review-grpc-service` | gRPC + REST                              | Demo híbrida. Usa puerto gRPC `50051` (conflicta con `user-service` si se ejecutan juntos). |
-| `_legacy/review-service`      | REST                                     | Demo standalone con almacenamiento en memoria.                                              |
-| `_legacy/course-service`      | Nest microservice TCP (`127.0.0.1:3002`) | Demo de transporte TCP.                                                                     |
-| `_legacy/db-service`          | `json-server` REST                       | Backend mock/soporte demo para reseñas.                                                     |
+| `review-grpc-service` | gRPC + REST                              | Demo híbrida. Usa puerto gRPC `50051` (conflicta con `user-service` si se ejecutan juntos). |
 
-> Nota: estos servicios existen en el repo y son útiles para aprendizaje, pero no están integrados como parte de compra/inscripción.
+> Nota: Slice 1 cleanup removió 3 servicios demo sin uso (`course-service`, `review-service`, `db-service`). `review-grpc-service` queda deferido para un cleanup posterior de protos/legacy.
 
 ---
 
@@ -83,10 +80,8 @@ Este documento describe el contenido del backend en microservicios para el proye
 ## 3.3 Review stack
 
 - Hay implementaciones paralelas para aprendizaje:
-- `_legacy/review-service`: memoria.
-- `_legacy/db-service`: `json-server`.
-- `_legacy/review-grpc-service`: expone gRPC/REST y consume `_legacy/db-service` vía HTTP.
-- Existe además un `schema.prisma` SQLite en `_legacy/review-grpc-service`, pero el flujo activo del servicio está implementado contra `_legacy/db-service` HTTP.
+- `review-grpc-service`: expone gRPC/REST como demo aislada y queda deferido para revisión específica de cleanup/protos.
+- Existe además un `schema.prisma` SQLite en `review-grpc-service` como parte de ese stack educativo deferido.
 
 ---
 
