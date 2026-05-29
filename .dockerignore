@@ -4,6 +4,5 @@
 *.md
 course-service
 review-service
-review-grpc-service
 db-service
 docs
