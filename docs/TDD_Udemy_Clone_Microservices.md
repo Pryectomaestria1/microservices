@@ -57,16 +57,6 @@ Este documento describe el contenido del backend en microservicios para el proye
 | `enrollment-service` | gRPC + RabbitMQ           | Inscripciones/progreso + consumo `course.purchased`  | PostgreSQL (Prisma)                                         |
 | `sales-service`      | gRPC + RabbitMQ publisher | Simulación de checkout y emisión de eventos          | PostgreSQL (Prisma)                                         |
 
-## 2.2 Servicios auxiliares / educativos (no path principal)
-
-| Servicio                      | Transporte                               | Estado y uso esperado                                                                       |
-| ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `review-grpc-service` | gRPC + REST                              | Demo híbrida. Usa puerto gRPC `50051` (conflicta con `user-service` si se ejecutan juntos). |
-
-> Nota: Slice 1 cleanup removió 3 servicios demo sin uso (`course-service`, `review-service`, `db-service`). `review-grpc-service` queda deferido para un cleanup posterior de protos/legacy.
-
----
-
 ## 3) Persistencia y datos (estado actual)
 
 ## 3.1 PostgreSQL
@@ -76,14 +66,6 @@ Este documento describe el contenido del backend en microservicios para el proye
 - Persiste roles y perfiles en archivos JSON locales:
   - `upgraded_roles.json`
   - `user_profiles.json`
-
-## 3.3 Review stack
-
-- Hay implementaciones paralelas para aprendizaje:
-- `review-grpc-service`: expone gRPC/REST como demo aislada y queda deferido para revisión específica de cleanup/protos.
-- Existe además un `schema.prisma` SQLite en `review-grpc-service` como parte de ese stack educativo deferido.
-
----
 
 ## 4) Autenticación y autorización
 
