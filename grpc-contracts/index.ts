@@ -2,34 +2,6 @@
 import { Observable } from 'rxjs';
 
 // =========================================
-// Namespace: Auth
-// =========================================
-
-export interface ValidateTokenRequest {
-  token?: string;
-}
-
-export interface ValidateTokenResponse {
-  isValid?: boolean;
-  userId?: string;
-  role?: string;
-}
-
-export interface BecomeInstructorRequest {
-  token?: string;
-}
-
-export interface BecomeInstructorResponse {
-  success?: boolean;
-  role?: string;
-}
-
-export interface AuthService {
-  validateToken(request: ValidateTokenRequest): Observable<ValidateTokenResponse> | Promise<ValidateTokenResponse> | ValidateTokenResponse;
-  becomeInstructor(request: BecomeInstructorRequest): Observable<BecomeInstructorResponse> | Promise<BecomeInstructorResponse> | BecomeInstructorResponse;
-}
-
-// =========================================
 // Namespace: Catalog
 // =========================================
 
@@ -46,6 +18,7 @@ export interface Course {
   instructorId?: string;
   price?: number;
   description?: string;
+  coverImage?: string;
 }
 
 export interface Module {
@@ -53,6 +26,7 @@ export interface Module {
   courseId?: string;
   title?: string;
   description?: string;
+  position?: number;
 }
 
 export interface Lesson {
@@ -63,6 +37,7 @@ export interface Lesson {
   status?: string;
   resources?: Resource[];
   description?: string;
+  position?: number;
 }
 
 export interface Resource {
@@ -78,18 +53,21 @@ export interface CreateCourseRequest {
   instructorId?: string;
   price?: number;
   description?: string;
+  coverImage?: string;
 }
 
 export interface AddModuleRequest {
   courseId?: string;
   title?: string;
   description?: string;
+  position?: number;
 }
 
 export interface AddLessonRequest {
   moduleId?: string;
   title?: string;
   description?: string;
+  position?: number;
 }
 
 export interface UpdateLessonVideoRequest {
@@ -125,6 +103,7 @@ export interface CourseDetails {
   price?: number;
   description?: string;
   modules?: ModuleDetails[];
+  coverImage?: string;
 }
 
 export interface ModuleDetails {
@@ -145,6 +124,7 @@ export interface UpdateCourseRequest {
   courseId?: string;
   title?: string;
   description?: string;
+  coverImage?: string;
 }
 
 export interface UpdateModuleRequest {
@@ -157,6 +137,17 @@ export interface UpdateLessonRequest {
   lessonId?: string;
   title?: string;
   description?: string;
+}
+
+export interface VerifyOwnershipRequest {
+  userId?: string;
+  courseId?: string;
+  moduleId?: string;
+  lessonId?: string;
+}
+
+export interface VerifyOwnershipResponse {
+  isOwner?: boolean;
 }
 
 export interface CatalogService {
@@ -172,6 +163,7 @@ export interface CatalogService {
   addResourceToLesson(request: AddResourceRequest): Observable<Resource> | Promise<Resource> | Resource;
   updateModule(request: UpdateModuleRequest): Observable<Module> | Promise<Module> | Module;
   updateLesson(request: UpdateLessonRequest): Observable<Lesson> | Promise<Lesson> | Lesson;
+  verifyOwnership(request: VerifyOwnershipRequest): Observable<VerifyOwnershipResponse> | Promise<VerifyOwnershipResponse> | VerifyOwnershipResponse;
 }
 
 // =========================================
@@ -257,63 +249,6 @@ export interface MediaService {
 }
 
 // =========================================
-// Namespace: Review
-// =========================================
-
-export interface Review {
-  id?: string;
-  course_id?: string;
-  user_id?: string;
-  rating?: number;
-  comment?: string;
-  created_at?: any;
-}
-
-export interface CreateReviewRequest {
-  course_id?: string;
-  rating?: number;
-  comment?: string;
-}
-
-export interface GetReviewRequest {
-  id?: string;
-}
-
-export interface ReviewResponse {
-  review?: Review;
-}
-
-export interface UpdateReviewRequest {
-  id?: string;
-  rating?: number;
-  comment?: string;
-}
-
-export interface DeleteReviewRequest {
-  id?: string;
-}
-
-export interface DeleteReviewResponse {
-  success?: boolean;
-}
-
-export interface ListCourseReviewsRequest {
-  course_id?: string;
-}
-
-export interface ListCourseReviewsResponse {
-  reviews?: Review[];
-}
-
-export interface ReviewService {
-  createReview(request: CreateReviewRequest): Observable<ReviewResponse> | Promise<ReviewResponse> | ReviewResponse;
-  getReview(request: GetReviewRequest): Observable<ReviewResponse> | Promise<ReviewResponse> | ReviewResponse;
-  updateReview(request: UpdateReviewRequest): Observable<ReviewResponse> | Promise<ReviewResponse> | ReviewResponse;
-  deleteReview(request: DeleteReviewRequest): Observable<DeleteReviewResponse> | Promise<DeleteReviewResponse> | DeleteReviewResponse;
-  listCourseReviews(request: ListCourseReviewsRequest): Observable<ListCourseReviewsResponse> | Promise<ListCourseReviewsResponse> | ListCourseReviewsResponse;
-}
-
-// =========================================
 // Namespace: Sales
 // =========================================
 
@@ -335,5 +270,61 @@ export interface ProcessPaymentResponse {
 
 export interface SalesService {
   processPayment(request: ProcessPaymentRequest): Observable<ProcessPaymentResponse> | Promise<ProcessPaymentResponse> | ProcessPaymentResponse;
+}
+
+// =========================================
+// Namespace: User
+// =========================================
+
+export interface ValidateTokenRequest {
+  token?: string;
+}
+
+export interface ValidateTokenResponse {
+  isValid?: boolean;
+  userId?: string;
+  role?: string;
+}
+
+export interface BecomeInstructorRequest {
+  token?: string;
+}
+
+export interface BecomeInstructorResponse {
+  success?: boolean;
+  role?: string;
+}
+
+export interface GetUsersByIdsRequest {
+  userIds?: string[];
+}
+
+export interface GetUsersByIdsResponse {
+  users?: UserSummary[];
+}
+
+export interface UserSummary {
+  id?: string;
+  name?: string;
+  avatarUrl?: string;
+}
+
+export interface SyncProfileRequest {
+  userId?: string;
+  name?: string;
+  avatarUrl?: string;
+  role?: string;
+}
+
+export interface SyncProfileResponse {
+  success?: boolean;
+  role?: string;
+}
+
+export interface UserService {
+  validateToken(request: ValidateTokenRequest): Observable<ValidateTokenResponse> | Promise<ValidateTokenResponse> | ValidateTokenResponse;
+  becomeInstructor(request: BecomeInstructorRequest): Observable<BecomeInstructorResponse> | Promise<BecomeInstructorResponse> | BecomeInstructorResponse;
+  getUsersByIds(request: GetUsersByIdsRequest): Observable<GetUsersByIdsResponse> | Promise<GetUsersByIdsResponse> | GetUsersByIdsResponse;
+  syncProfile(request: SyncProfileRequest): Observable<SyncProfileResponse> | Promise<SyncProfileResponse> | SyncProfileResponse;
 }
 

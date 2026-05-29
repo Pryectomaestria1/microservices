@@ -108,14 +108,6 @@ Campos importantes incorporados en contrato actual:
 - `position` en `Module`/`Lesson`
 - `resources` en `Lesson`
 
-## 5.2 `review.proto`
-
-Existe contrato `grpc-contracts/review.proto` con `ReviewService`:
-
-- `CreateReview`, `GetReview`, `UpdateReview`, `DeleteReview`, `ListCourseReviews`.
-
-Es parte del ecosistema de servicios educativos/review, no del flujo principal de compras.
-
 ---
 
 ## 6) Storage de medios
